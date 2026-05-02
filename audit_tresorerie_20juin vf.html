@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>Audit-Conseil 20 Juin — Pôle Trésorerie</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#f7f9fc;margin:20px;color:#2d3436;}
+h2{font-weight:600;margin-bottom:4px;}
+.subtitle{color:#636e72;font-size:13px;margin-bottom:18px;}
+.dashboard{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.card{background:white;padding:12px 18px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.06);min-width:110px;text-align:center;}
+.card .label{font-size:11px;color:#636e72;margin-bottom:4px;}
+.card .value{font-size:22px;font-weight:600;}
+.card.done .value{color:#27ae60;}
+.card.inprog .value{color:#e67e22;}
+.card.todo .value{color:#2980b9;}
+.card.late .value{color:#d63031;}
+.progress-bar-wrap{background:#eee;border-radius:99px;height:8px;margin-top:6px;width:100%;min-width:80px;}
+.progress-bar{background:#27ae60;border-radius:99px;height:8px;transition:width .4s;}
+.filters{margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.filters select,.filters input{padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit;font-size:13px;background:white;}
+.filters select:focus,.filters input:focus{outline:none;border-color:#74b9ff;}
+button{padding:7px 12px;border:none;border-radius:8px;background:#dfe6e9;cursor:pointer;font-family:inherit;font-size:13px;}
+button:hover{background:#b2bec3;}
+.btn-add{background:#d4efdf;color:#1e8449;}
+.btn-add:hover{background:#a9dfbf;}
+.btn-clear{background:#ffeaa7;color:#7d6608;}
+.btn-clear:hover{background:#fdcb6e;}
+table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+th{background:#eef2f7;font-weight:600;font-size:12px;color:#636e72;text-transform:uppercase;letter-spacing:.04em;}
+th,td{padding:9px 10px;border-bottom:1px solid #f0f0f0;text-align:left;vertical-align:middle;}
+thead tr th{text-align:center;}
+tbody tr:hover{background:#f9fbff;}
+.section-row td{background:#f0f4f8;font-weight:600;font-size:12px;color:#555;letter-spacing:.05em;text-transform:uppercase;padding:6px 10px;border-top:2px solid #dde3ed;}
+select.cell-sel{border:1px solid #eee;background:white;font-family:inherit;font-size:12px;cursor:pointer;width:100%;border-radius:6px;padding:3px 5px;}
+select.cell-sel:focus{outline:none;border-color:#74b9ff;}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap;margin-top:3px;}
+.b-gwilherm{background:#DFE6E9;color:#2d3436;}
+.b-stella{background:#D5C8F8;color:#3d0a8c;}
+.b-pagesan{background:#B2F0DB;color:#005a36;}
+.b-equipe{background:#C8E6C9;color:#1b5e20;}
+.prio-Haute{color:#d63031;font-weight:600;font-size:12px;}
+.prio-Moyenne{color:#e67e22;font-weight:600;font-size:12px;}
+.prio-Basse{color:#27ae60;font-weight:600;font-size:12px;}
+.s-afaire{background:#EBF5FB;color:#1a5276;}
+.s-encours{background:#FEF9E7;color:#7d6608;}
+.s-termine{background:#EAFAF1;color:#1e8449;}
+.days-red{color:#d63031;font-weight:600;font-size:12px;}
+.days-orange{color:#e67e22;font-weight:600;font-size:12px;}
+.days-green{color:#27ae60;font-weight:600;font-size:12px;}
+.del-btn{background:#fee2e2;color:#991b1b;padding:4px 9px;border-radius:6px;font-size:13px;border:none;cursor:pointer;font-weight:600;line-height:1;}
+.del-btn:hover{background:#e17055;color:white;}
+td.task-name{font-size:13px;color:#2d3436;min-width:180px;}
+td input[type=date]{font-size:12px;border:1px solid #eee;border-radius:6px;padding:3px 6px;font-family:inherit;background:white;}
+td input[type=date]:focus{outline:none;border-color:#74b9ff;}
+.note-field{font-size:11px;color:#888;max-width:130px;}
+.toolbar-row{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap;}
+.filter-note{font-size:11px;color:#636e72;font-style:italic;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center;}
+.modal-box{background:white;border-radius:16px;padding:32px 36px;width:480px;max-width:95vw;box-shadow:0 12px 40px rgba(0,0,0,0.18);}
+.modal-box h3{font-weight:600;font-size:17px;margin:0 0 6px;}
+.modal-subtitle{font-size:12px;color:#636e72;margin-bottom:24px;}
+.modal-field{margin-bottom:18px;}
+.modal-field label{display:block;font-size:12px;font-weight:600;color:#636e72;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.modal-field input[type=text],.modal-field input[type=date],.modal-field select,.modal-field textarea{width:100%;padding:9px 11px;border-radius:8px;border:1px solid #ddd;font-family:inherit;font-size:13px;color:#2d3436;background:white;}
+.modal-field textarea{resize:vertical;min-height:60px;}
+.modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{outline:none;border-color:#74b9ff;}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #f0f0f0;}
+.modal-actions button{padding:9px 22px;font-size:13px;}
+.btn-confirm{background:#d4efdf;color:#1e8449;font-weight:600;}
+.btn-confirm:hover{background:#a9dfbf;}
+.btn-cancel{background:#f0f0f0;color:#636e72;}
+.btn-cancel:hover{background:#dfe6e9;}
+
+.sync-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:#636e72;}
+.sync-dot{width:9px;height:9px;border-radius:50%;background:#b2bec3;flex-shrink:0;transition:background .3s;}
+.sync-dot.ok{background:#27ae60;}
+.sync-dot.syncing{background:#e67e22;animation:pulse .8s infinite;}
+.sync-dot.error{background:#d63031;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+</style>
+</head>
+<body>
+
+<h2>Audit-Conseil — 20 Juin 2025</h2>
+<p class="subtitle">Pôle Trésorerie &nbsp;·&nbsp; <strong>GWILHERM</strong> (Tréso sortant) &nbsp;·&nbsp; <strong>STELLA</strong> (VT + Auditrice interne) &nbsp;·&nbsp; <strong>PAGESAN</strong> (Tréso entrant)</p>
+<div class="sync-bar">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-label">Connexion à Firebase…</span>
+</div>
+
+<div class="dashboard">
+  <div class="card"><div class="label">Total (vue)</div><div class="value" id="total">—</div></div>
+  <div class="card done"><div class="label">Terminées</div><div class="value" id="done">—</div></div>
+  <div class="card inprog"><div class="label">En cours</div><div class="value" id="progress">—</div></div>
+  <div class="card todo"><div class="label">À faire</div><div class="value" id="todo">—</div></div>
+  <div class="card late"><div class="label">⚠ Urgent/retard</div><div class="value" id="late">—</div></div>
+  <div class="card" style="min-width:160px;">
+    <div class="label">Progression (vue)</div>
+    <div class="value" id="percent" style="font-size:18px;">—%</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="filters">
+  <input type="text" id="search" placeholder="🔍 Rechercher…" oninput="render()"/>
+  <select id="filterResp" onchange="render()">
+    <option value="">Responsable</option>
+    <option>GWILHERM</option>
+    <option>STELLA</option>
+    <option>PAGESAN</option>
+    <option>Équipe</option>
+  </select>
+  <select id="filterPriority" onchange="render()">
+    <option value="">Priorité</option>
+    <option>Haute</option>
+    <option>Moyenne</option>
+    <option>Basse</option>
+  </select>
+  <select id="filterStatus" onchange="render()">
+    <option value="">Statut</option>
+    <option>À faire</option>
+    <option>En cours</option>
+    <option>Terminé</option>
+  </select>
+  <select id="filterSection" onchange="render()">
+    <option value="">Section</option>
+    <option>RFP & Passation</option>
+    <option>Organisation</option>
+    <option>Comptabilité</option>
+    <option>Tableaux de suivi</option>
+    <option>Budget</option>
+    <option>Social</option>
+    <option>Fiscal</option>
+    <option>Ventes</option>
+    <option>Achats</option>
+    <option>Processus & Risques</option>
+  </select>
+  <select id="filterLate" onchange="render()">
+    <option value="">Échéance</option>
+    <option value="0">En retard</option>
+    <option value="7">≤ 1 semaine</option>
+    <option value="14">≤ 2 semaines</option>
+    <option value="21">≤ 3 semaines</option>
+  </select>
+  <button class="btn-clear" onclick="clearFilters()">Réinitialiser</button>
+</div>
+
+<div class="toolbar-row">
+  <button class="btn-add" onclick="addTask()">+ Ajouter une tâche</button>
+  <button onclick="exportCSV()" style="background:#dfe6e9;">⬇ Exporter CSV</button>
+  <span class="filter-note" id="filter-note"></span>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th style="width:28%">Tâche</th>
+  <th style="width:11%">Responsable</th>
+  <th style="width:9%">Statut</th>
+  <th style="width:8%">Priorité</th>
+  <th style="width:12%">Section</th>
+  <th style="width:10%">Échéance</th>
+  <th style="width:5%">Jours</th>
+  <th style="width:13%">Notes</th>
+  <th style="width:4%"></th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script>
+// ── Firebase config ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyATR3uxThMrAO7302kdxHwODul1XpIDKL8",
+  authDomain: "audit-tresorerie.firebaseapp.com",
+  projectId: "audit-tresorerie",
+  storageBucket: "audit-tresorerie.firebasestorage.app",
+  messagingSenderId: "566000504770",
+  appId: "1:566000504770:web:41034f2b9f77583861505b"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+var tasksCol = db.collection('tasks');
+
+// ── State ─────────────────────────────────────────────────────
+var SECTIONS=["RFP & Passation","Organisation","Comptabilité","Tableaux de suivi","Budget","Social","Fiscal","Ventes","Achats","Processus & Risques","Autres"];
+var RESPS=["GWILHERM","STELLA","PAGESAN","Équipe"];
+var BADGE_CLS={"GWILHERM":"b-gwilherm","STELLA":"b-stella","PAGESAN":"b-pagesan","Équipe":"b-equipe"};
+var tasks=[];
+var taskIds=[];  // Firestore doc IDs parallel to tasks[]
+
+// ── Sync helpers ──────────────────────────────────────────────
+function setSyncStatus(state,msg){
+  var dot=document.getElementById('sync-dot');
+  var lbl=document.getElementById('sync-label');
+  dot.className='sync-dot '+state;
+  lbl.innerText=msg;
+}
+
+// ── Firestore real-time listener ──────────────────────────────
+tasksCol.orderBy('order').onSnapshot(function(snapshot){
+  tasks=[];taskIds=[];
+  snapshot.forEach(function(doc){
+    tasks.push(doc.data());
+    taskIds.push(doc.id);
+  });
+  setSyncStatus('ok','Synchronisé · '+tasks.length+' tâches');
+  render();
+}, function(err){
+  setSyncStatus('error','Erreur de connexion — '+err.message);
+});
+
+// ── Write helpers (each mutation → Firestore) ─────────────────
+function saveTask(ri){
+  setSyncStatus('syncing','Enregistrement…');
+  var id=taskIds[ri];
+  if(id){
+    tasksCol.doc(id).set(tasks[ri]).catch(function(e){setSyncStatus('error',e.message);});
+  }
+}
+function deleteTaskRemote(ri){
+  setSyncStatus('syncing','Suppression…');
+  var id=taskIds[ri];
+  if(id) tasksCol.doc(id).delete().catch(function(e){setSyncStatus('error',e.message);});
+}
+function addTaskRemote(t){
+  setSyncStatus('syncing','Ajout…');
+  t.order=Date.now();
+  tasksCol.add(t).catch(function(e){setSyncStatus('error',e.message);});
+}
+
+// ── Field setters ─────────────────────────────────────────────
+function setStatus(ri,v){tasks[ri].status=v;saveTask(ri);}
+function setResp(ri,v){tasks[ri].resp=v;saveTask(ri);}
+function setPrio(ri,v){tasks[ri].priority=v;saveTask(ri);}
+function setSec(ri,v){tasks[ri].section=v;saveTask(ri);}
+function setDate(ri,v){tasks[ri].date=v;saveTask(ri);}
+function setName(ri,v){tasks[ri].name=v;saveTask(ri);}
+function setNote(ri,v){tasks[ri].note=v;saveTask(ri);}
+function removeTask(ri){deleteTaskRemote(ri);}
+
+// ── Helpers ───────────────────────────────────────────────────
+function daysTo(date){
+  if(!date)return null;
+  var today=new Date();today.setHours(0,0,0,0);
+  return Math.ceil((new Date(date)-today)/86400000);
+}
+function daysClass(d){
+  if(d===null)return'';
+  if(d<=0)return'days-red';
+  if(d<=7)return'days-orange';
+  return'days-green';
+}
+function statusClass(s){
+  if(s==='Terminé')return's-termine';
+  if(s==='En cours')return's-encours';
+  return's-afaire';
+}
+function opt(val,cur){
+  return'<option value="'+val+'"'+(val===cur?' selected':'')+'>'+val+'</option>';
+}
+
+// ── Render ────────────────────────────────────────────────────
+function render(){
+  var search=document.getElementById('search').value.toLowerCase();
+  var fResp=document.getElementById('filterResp').value;
+  var fPri=document.getElementById('filterPriority').value;
+  var fStat=document.getElementById('filterStatus').value;
+  var fSec=document.getElementById('filterSection').value;
+  var fLate=document.getElementById('filterLate').value;
+
+  var filtered=[];
+  for(var i=0;i<tasks.length;i++){
+    var t=tasks[i];
+    var diff=daysTo(t.date);
+    var lateOk=true;
+    if(fLate!==''){var n=parseInt(fLate);lateOk=diff!==null&&diff<=n;}
+    if((!search||t.name.toLowerCase().indexOf(search)>=0)&&
+       (!fResp||t.resp===fResp)&&
+       (!fPri||t.priority===fPri)&&
+       (!fStat||t.status===fStat)&&
+       (!fSec||t.section===fSec)&&
+       lateOk){
+      filtered.push({t:t,ri:i});
+    }
+  }
+
+  var total=filtered.length,done=0,inprog=0,todo=0,late=0;
+  for(var j=0;j<filtered.length;j++){
+    var ft=filtered[j].t;
+    if(ft.status==='Terminé')done++;
+    else if(ft.status==='En cours')inprog++;
+    else todo++;
+    var dd=daysTo(ft.date);
+    if(dd!==null&&dd<=0&&ft.status!=='Terminé')late++;
+  }
+  var pct=total?Math.round(done/total*100):0;
+
+  document.getElementById('total').innerText=total;
+  document.getElementById('done').innerText=done;
+  document.getElementById('progress').innerText=inprog;
+  document.getElementById('todo').innerText=todo;
+  document.getElementById('late').innerText=late;
+  document.getElementById('percent').innerText=pct+'%';
+  document.getElementById('prog-bar').style.width=pct+'%';
+
+  var isF=(fResp||fPri||fStat||fSec||fLate||search);
+  document.getElementById('filter-note').innerText=isF?'Affichage de '+total+' tâche(s) sur '+tasks.length+' au total':'';
+
+  var html='';var curSec='';
+  for(var k=0;k<filtered.length;k++){
+    var item=filtered[k];var t=item.t;var ri=item.ri;
+    if(t.section!==curSec){
+      curSec=t.section;
+      html+='<tr class="section-row"><td colspan="9">'+t.section+'</td></tr>';
+    }
+    var diff=daysTo(t.date);
+    var dLabel=diff===null?'':(diff<=0?'⚠ '+diff+'j':diff+'j');
+    var dCls=daysClass(diff);
+    var bCls=BADGE_CLS[t.resp]||'b-equipe';
+    var sCls=statusClass(t.status);
+    var secOpts='';for(var s=0;s<SECTIONS.length;s++)secOpts+=opt(SECTIONS[s],t.section);
+    var respOpts='';for(var r=0;r<RESPS.length;r++)respOpts+=opt(RESPS[r],t.resp);
+    var prioOpts=opt('Haute',t.priority)+opt('Moyenne',t.priority)+opt('Basse',t.priority);
+    var statOpts=opt('À faire',t.status)+opt('En cours',t.status)+opt('Terminé',t.status);
+
+    html+='<tr>'
+      +'<td class="task-name" contenteditable="true" onblur="setName('+ri+',this.innerText)">'+t.name+'</td>'
+      +'<td style="min-width:100px"><select class="cell-sel" onchange="setResp('+ri+',this.value)">'+respOpts+'</select></td>'
+      +'<td><select class="cell-sel '+sCls+'" onchange="setStatus('+ri+',this.value)">'+statOpts+'</select></td>'
+      +'<td class="prio-'+t.priority+'"><select class="cell-sel" onchange="setPrio('+ri+',this.value)">'+prioOpts+'</select></td>'
+      +'<td><select class="cell-sel" onchange="setSec('+ri+',this.value)">'+secOpts+'</select></td>'
+      +'<td><input type="date" value="'+(t.date||'')+'" onchange="setDate('+ri+',this.value)"></td>'
+      +'<td class="'+dCls+'" style="text-align:center">'+dLabel+'</td>'
+      +'<td class="note-field" contenteditable="true" onblur="setNote('+ri+',this.innerText)">'+(t.note||'')+'</td>'
+      +'<td style="text-align:center"><button class="del-btn" onclick="removeTask('+ri+')">✕</button></td>'
+      +'</tr>';
+  }
+  if(!html)html='<tr><td colspan="9" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune tâche pour ces filtres</td></tr>';
+  document.getElementById('tbody').innerHTML=html;
+}
+
+// ── Add task modal ────────────────────────────────────────────
+function addTask(){
+  document.getElementById('m-name').value='';
+  document.getElementById('m-note').value='';
+  document.getElementById('m-date').value='';
+  document.getElementById('m-sec').selectedIndex=0;
+  document.getElementById('m-resp').selectedIndex=0;
+  document.getElementById('m-prio').value='Moyenne';
+  document.getElementById('m-status').value='À faire';
+  document.getElementById('modal-overlay').style.display='flex';
+  setTimeout(function(){document.getElementById('m-name').focus();},80);
+}
+function modalConfirm(){
+  var name=document.getElementById('m-name').value.trim();
+  if(!name){document.getElementById('m-name').focus();return;}
+  addTaskRemote({
+    section:document.getElementById('m-sec').value,
+    name:name,
+    resp:document.getElementById('m-resp').value,
+    status:document.getElementById('m-status').value,
+    priority:document.getElementById('m-prio').value,
+    date:document.getElementById('m-date').value,
+    note:document.getElementById('m-note').value.trim()
+  });
+  document.getElementById('modal-overlay').style.display='none';
+}
+function modalCancel(){
+  document.getElementById('modal-overlay').style.display='none';
+}
+
+// ── Filters & export ──────────────────────────────────────────
+function clearFilters(){
+  ['search','filterResp','filterPriority','filterStatus','filterSection','filterLate'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  render();
+}
+function exportCSV(){
+  var bom='﻿';
+  var header=['Section','Tâche','Responsable','Statut','Priorité','Échéance','Notes'];
+  var rows=tasks.map(function(t){
+    return['"'+t.section+'"','"'+(t.name||'').replace(/"/g,'""')+'"',t.resp,t.status,t.priority,(t.date||''),'"'+(t.note||'').replace(/"/g,'""')+'"'];
+  });
+  var csv=bom+[header].concat(rows).map(function(r){return r.join(';');}).join('
+');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='audit_tresorerie_20juin.csv';
+  a.click();
+}
+
+// ── Seed initial tasks if Firestore is empty ──────────────────
+var INITIAL_TASKS = [
+  {section:"RFP & Passation",name:"Fiches de poste du pôle Trésorerie",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Book de preuves"},
+  {section:"RFP & Passation",name:"Tests de recrutement éventuels + tableau suivi postulants",resp:"STELLA",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"RFP & Passation",name:"Supports de formation + outils de passation (books, checklists)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Inclure book technique"},
+  {section:"RFP & Passation",name:"Briefer PAGESAN sur le processus comptable et les outils",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Transmission via book tech"},
+  {section:"RFP & Passation",name:"Préparer book technique pôle Trésorerie",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Organisation",name:"Cartographie archivage papier (classeurs) et numérique (Drive)",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:"Préparer classeurs physiques"},
+  {section:"Organisation",name:"Documents sociaux des 3 dernières années",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Organisation",name:"Documents fiscaux des 6 dernières années",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Organisation",name:"BV et notes de frais des membres avec droits de paiement",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Organisation",name:"Chèques annulés + bordereaux de remise + photocopies chèques",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Organisation",name:"Slides et CR de CA avec points trésorerie",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Organisation",name:"CR des audits internes réalisés sur le mandat",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Rôle auditrice interne"},
+  {section:"Organisation",name:"Réserver salle calme accessible 8h–19h le 20 juin",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Organisation",name:"Préparer connexion internet + identifiants pour auditeurs",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Organisation",name:"Contrats de leasing éventuels",resp:"GWILHERM",status:"À faire",priority:"Basse",date:"",note:"Si applicable"},
+  {section:"Comptabilité",name:"Grand-Livre et Balance Générale exercice en cours — vérifier à jour",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Logiciel compta à dispo"},
+  {section:"Comptabilité",name:"Grand-Livre et Balance Générale exercice précédent",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Comptabilité",name:"Liasses fiscales des 2 derniers exercices clôturés",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Comptabilité",name:"Fichier FEC + sauvegardes de comptabilité",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Comptabilité",name:"Ensemble des ERB + relevés bancaires de l'année",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Comptabilité",name:"Lettre de mission de l'Expert-Comptable",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Comptabilité",name:"Processus clôture comptable + tableau cut-off + dossier de clôture",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Rôle VT"},
+  {section:"Comptabilité",name:"Relecture et validation des entrées comptables (logiciel VT)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Double contrôle VT"},
+  {section:"Comptabilité",name:"Contrôle cohérence TSC ↔ comptabilité",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC = outil auditrice interne"},
+  {section:"Tableaux de suivi",name:"Tableau suivi ventes / créances à jour (TSC)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC Google Sheet"},
+  {section:"Tableaux de suivi",name:"Tableau suivi achats / dettes à jour (TSC)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC Google Sheet"},
+  {section:"Tableaux de suivi",name:"Tableau suivi TVA à jour",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Tableaux de suivi",name:"Tableau suivi des BV à jour",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Tableaux de suivi",name:"Tableau suivi URSSAF à jour",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Tableaux de suivi",name:"Tableau suivi DADS/DAS2 à jour",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Tableaux de suivi",name:"Tableau de suivi Taux d'Ouverture (TSC)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC"},
+  {section:"Tableaux de suivi",name:"Relances clients — mise à jour TSC",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Suivi recouvrement"},
+  {section:"Tableaux de suivi",name:"Forecasts et budget actualisés dans le TSC",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC forecasts"},
+  {section:"Budget",name:"Processus de création et suivi du budget formalisé",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Budget",name:"Note de stratégie + plan d'actions mandat sortant",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Budget",name:"Toutes les versions du budget mandat sortant (avec actualisations)",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Budget",name:"Budget mandat entrant — version initiale",resp:"PAGESAN",status:"À faire",priority:"Haute",date:"",note:"Coordination avec STELLA"},
+  {section:"Social",name:"Processus sociaux formalisés (BV, BRC, TR, DADS) — 3 règles d'or",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Social",name:"BV type + lettre CARSAT + tous BV émis depuis dernier audit",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Social",name:"12 derniers BRC émis + conventions de stage",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Social",name:"Tableau Récapitulatif dernière année civile (DADS)",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Social",name:"Relecture processus BV par STELLA (double contrôle VT)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Fiscal",name:"Processus fiscaux formalisés (TVA, IS, DAS2) — 3 règles d'or",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Fiscal",name:"Déclaratifs TVA depuis dernier audit + accusés + ordres paiement (6 ans)",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Fiscal",name:"Justificatifs subventions + Déclarations Européennes de Services",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:"Si applicable"},
+  {section:"Fiscal",name:"Déclarations IS 3 derniers exercices + accusés + ordres de paiement",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Fiscal",name:"DAS2 dernière année civile + dernier avis CFE + bordereau CVAE",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Fiscal",name:"Relecture et contrôle cohérence déclaratifs fiscaux (TSC)",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Contrôle auditrice interne"},
+  {section:"Ventes",name:"Processus d'émission des factures de vente formalisé",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Ventes",name:"Processus hors études (refacturations, adhésions, subventions)",resp:"GWILHERM",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Ventes",name:"Factures types (acompte, intermédiaire, solde, refacturation) + PVRI",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:"Upload prégrille"},
+  {section:"Ventes",name:"Toutes les factures émises depuis le dernier audit (classeur Ventes)",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Ventes",name:"Processus de relance client formalisé",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC — suivi créances"},
+  {section:"Ventes",name:"Balance âgée / tableau créances à jour",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"TSC"},
+  {section:"Achats",name:"Processus des achats formalisé",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Achats",name:"Processus notes de frais + RI seuil vote achats non budgétés",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Achats",name:"Toutes les factures reçues depuis dernier audit + preuves de paiement",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:"Classeur Achats"},
+  {section:"Achats",name:"Notes de frais fonctionnement + kilométriques + justificatifs",resp:"GWILHERM",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Achats",name:"Vérification cohérence factures achats dans le TSC",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Contrôle auditrice interne"},
+  {section:"Processus & Risques",name:"Cartographie des processus à jour",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Auditrice interne"},
+  {section:"Processus & Risques",name:"Cartographie des risques de la structure à jour",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Processus & Risques",name:"Processus de gestion des risques documenté",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:""},
+  {section:"Processus & Risques",name:"Documentation des modifications de processus du mandat",resp:"STELLA",status:"À faire",priority:"Moyenne",date:"",note:""},
+  {section:"Processus & Risques",name:"Remplir et valider les prégrilles (upload docs) — deadline J-7",resp:"Équipe",status:"À faire",priority:"Haute",date:"",note:"Deadline impérative CNJE"},
+  {section:"Processus & Risques",name:"Briefer PAGESAN sur les processus en vigueur",resp:"STELLA",status:"À faire",priority:"Haute",date:"",note:"Passation entrant"},
+];
+
+tasksCol.get().then(function(snap){
+  if(snap.empty){
+    setSyncStatus('syncing','Chargement initial des tâches…');
+    var batch=db.batch();
+    INITIAL_TASKS.forEach(function(t,i){
+      t.order=i;
+      batch.set(tasksCol.doc(),t);
+    });
+    batch.commit().catch(function(e){setSyncStatus('error',e.message);});
+  }
+});
+</script>
+
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)modalCancel()">
+  <div class="modal-box">
+    <h3>Ajouter une tâche</h3>
+    <p class="modal-subtitle">Remplis les champs puis valide — la tâche apparaîtra directement dans le tableau.</p>
+
+    <div class="modal-field">
+      <label>Section</label>
+      <select id="m-sec"><option value="RFP & Passation">RFP & Passation</option><option value="Organisation">Organisation</option><option value="Comptabilité">Comptabilité</option><option value="Tableaux de suivi">Tableaux de suivi</option><option value="Budget">Budget</option><option value="Social">Social</option><option value="Fiscal">Fiscal</option><option value="Ventes">Ventes</option><option value="Achats">Achats</option><option value="Processus & Risques">Processus & Risques</option><option value="Autres">Autres</option></select>
+    </div>
+
+    <div class="modal-field">
+      <label>Description de la tâche</label>
+      <input type="text" id="m-name" placeholder="Ex : Préparer le Grand-Livre…" />
+    </div>
+
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Responsable</label>
+        <select id="m-resp">
+          <option value="GWILHERM">GWILHERM</option>
+          <option value="STELLA">STELLA</option>
+          <option value="PAGESAN">PAGESAN</option>
+          <option value="Équipe">Équipe</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Priorité</label>
+        <select id="m-prio">
+          <option value="Haute">Haute</option>
+          <option value="Moyenne" selected>Moyenne</option>
+          <option value="Basse">Basse</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Échéance</label>
+        <input type="date" id="m-date" />
+      </div>
+      <div class="modal-field">
+        <label>Statut</label>
+        <select id="m-status">
+          <option value="À faire" selected>À faire</option>
+          <option value="En cours">En cours</option>
+          <option value="Terminé">Terminé</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label>Notes (optionnel)</label>
+      <textarea id="m-note" placeholder="Remarques, liens, contexte…"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="modalCancel()">Annuler</button>
+      <button class="btn-confirm" onclick="modalConfirm()">Ajouter la tâche →</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
