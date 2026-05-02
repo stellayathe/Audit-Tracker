@@ -6,525 +6,221 @@
 <title>ICN Junior Conseil — Dashboard Trésorerie</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-:root {
-  --bordeaux: #A3215F;
-  --bordeaux-dark: #7a1847;
-  --bordeaux-light: #c4447e;
-  --navy: #1B2A4A;
-  --navy-light: #2d4270;
-  --gray: #4a4a5a;
-  --gray-light: #8a8a9a;
-  --bg: #f5f4f2;
-  --white: #ffffff;
-  --card-shadow: 0 4px 24px rgba(27,42,74,0.08);
-  --card-shadow-hover: 0 12px 40px rgba(27,42,74,0.14);
-  --success: #2d7a5f;
-  --warning: #c47a1a;
-  --danger: #c43a2a;
-}
+:root{--bordeaux:#A3215F;--bordeaux-dark:#7a1847;--bordeaux-light:#c4447e;--navy:#1B2A4A;--navy-light:#2d4270;--gray:#4a4a5a;--gray-light:#8a8a9a;--bg:#f5f4f2;--white:#ffffff;--card-shadow:0 4px 24px rgba(27,42,74,0.08);--card-shadow-hover:0 12px 40px rgba(27,42,74,0.14);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--navy);min-height:100vh;}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── LOGIN ── */
+.login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);}
+.login-box{background:var(--white);border-radius:20px;padding:48px;width:400px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,0.25);text-align:center;}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:32px;}
+.login-logo svg{width:46px;height:46px;}
+.login-logo-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--navy);text-align:left;}
+.login-logo-sub{font-size:11px;color:var(--gray-light);text-transform:uppercase;letter-spacing:.1em;text-align:left;}
+.login-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--navy);margin-bottom:8px;}
+.login-sub{font-size:13px;color:var(--gray-light);margin-bottom:36px;line-height:1.6;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px 20px;background:var(--white);border:1.5px solid #e0e0e0;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--navy);cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.google-btn:hover{border-color:var(--bordeaux);box-shadow:0 4px 16px rgba(163,33,95,0.15);transform:translateY(-1px);}
+.google-btn img{width:20px;height:20px;}
+.login-error{background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:16px;display:none;text-align:left;}
+.denied-box{background:#fff8f8;border:1.5px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-top:16px;display:none;text-align:left;}
+.denied-box strong{display:block;font-size:13px;color:#991b1b;margin-bottom:4px;}
+.denied-box p{font-size:12px;color:#7f1d1d;margin:0;}
+.login-footer{margin-top:24px;font-size:11px;color:#b2bec3;}
 
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--navy);
-  min-height: 100vh;
-}
+/* ── APP ── */
+.app-page{display:none;}
+.header{background:var(--navy);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:68px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(27,42,74,0.3);}
+.header-left{display:flex;align-items:center;gap:16px;}
+.logo-mark{width:36px;height:36px;}
+.logo-mark svg{width:100%;height:100%;}
+.header-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--white);}
+.header-subtitle{font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:.12em;margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.sync-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:99px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.7);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#aaa;transition:background .3s;}
+.sync-dot.ok{background:#4ade80;box-shadow:0 0 6px #4ade80;}
+.sync-dot.syncing{background:#fbbf24;animation:blink .7s infinite;}
+.sync-dot.error{background:#f87171;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.user-pill-header{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:99px;padding:4px 12px 4px 4px;}
+.user-avatar-sm{width:26px;height:26px;border-radius:50%;object-fit:cover;display:none;}
+.user-name-header{font-size:12px;color:rgba(255,255,255,0.8);}
+.logout-btn-header{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .2s;}
+.logout-btn-header:hover{background:rgba(255,255,255,0.2);}
+.period-bar{background:var(--white);border-bottom:1px solid rgba(27,42,74,0.08);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px;}
+.period-tabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:3px;}
+.period-tab{padding:6px 18px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--gray);transition:all .2s;}
+.period-tab.active{background:var(--navy);color:var(--white);}
+.edit-btn{display:flex;align-items:center;gap:6px;padding:7px 16px;background:var(--bordeaux);color:var(--white);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background .2s;}
+.edit-btn:hover{background:var(--bordeaux-dark);}
+.edit-btn svg{width:14px;height:14px;}
+.main{padding:32px 40px;max-width:1400px;margin:0 auto;}
+.section-title{font-family:'Playfair Display',serif;font-size:13px;font-weight:600;color:var(--bordeaux);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;margin-top:32px;display:flex;align-items:center;gap:10px;}
+.section-title::after{content:'';flex:1;height:1px;background:rgba(163,33,95,0.15);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:8px;}
+.kpi-card{background:var(--white);border-radius:14px;padding:20px 22px;box-shadow:var(--card-shadow);transition:box-shadow .2s,transform .2s;position:relative;overflow:hidden;}
+.kpi-card:hover{box-shadow:var(--card-shadow-hover);transform:translateY(-2px);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--bordeaux);opacity:0;transition:opacity .2s;}
+.kpi-card:hover::before{opacity:1;}
+.kpi-card.accent::before{opacity:1;background:linear-gradient(90deg,var(--bordeaux),var(--navy));}
+.kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--gray-light);margin-bottom:10px;}
+.kpi-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--navy);line-height:1;margin-bottom:6px;}
+.kpi-unit{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:400;color:var(--gray-light);}
+.kpi-sub{font-size:11px;color:var(--gray-light);margin-top:6px;}
+.kpi-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;margin-top:6px;}
+.badge-good{background:#dcfce7;color:#166534;}
+.badge-warn{background:#fef9c3;color:#854d0e;}
+.badge-bad{background:#fee2e2;color:#991b1b;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.chart-card{background:var(--white);border-radius:14px;padding:24px;box-shadow:var(--card-shadow);}
+.chart-card.wide{grid-column:1/-1;}
+.chart-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px;}
+.chart-subtitle{font-size:11px;color:var(--gray-light);margin-bottom:20px;}
+.chart-wrap{position:relative;height:220px;}
+.taux-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.taux-card{background:var(--white);border-radius:12px;padding:16px 18px;box-shadow:var(--card-shadow);}
+.taux-label{font-size:11px;color:var(--gray-light);margin-bottom:8px;font-weight:500;}
+.taux-name{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.taux-bar-wrap{height:6px;background:#eee;border-radius:99px;margin-bottom:6px;}
+.taux-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--bordeaux),var(--bordeaux-light));transition:width .6s cubic-bezier(.4,0,.2,1);}
+.taux-pct{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--navy);}
 
-/* ── Header ── */
-.header {
-  background: var(--navy);
-  padding: 0 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 68px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 20px rgba(27,42,74,0.3);
-}
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.logo-mark {
-  width: 36px;
-  height: 36px;
-  position: relative;
-}
-.logo-mark svg { width: 100%; height: 100%; }
-.header-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 18px;
-  color: var(--white);
-  letter-spacing: .01em;
-}
-.header-subtitle {
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  margin-top: 1px;
-}
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.sync-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 99px;
-  padding: 5px 12px;
-  font-size: 11px;
-  color: rgba(255,255,255,0.7);
-}
-.sync-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #aaa;
-  transition: background .3s;
-}
-.sync-dot.ok { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
-.sync-dot.syncing { background: #fbbf24; animation: blink .7s infinite; }
-.sync-dot.error { background: #f87171; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-/* ── Period switcher ── */
-.period-bar {
-  background: var(--white);
-  border-bottom: 1px solid rgba(27,42,74,0.08);
-  padding: 0 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 52px;
-}
-.period-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 3px;
-}
-.period-tab {
-  padding: 6px 18px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--gray);
-  transition: all .2s;
-}
-.period-tab.active {
-  background: var(--navy);
-  color: var(--white);
-}
-.edit-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  background: var(--bordeaux);
-  color: var(--white);
-  border: none;
-  border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background .2s;
-}
-.edit-btn:hover { background: var(--bordeaux-dark); }
-.edit-btn svg { width: 14px; height: 14px; }
-
-/* ── Main layout ── */
-.main { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
-
-/* ── Section title ── */
-.section-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--bordeaux);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin-bottom: 16px;
-  margin-top: 32px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(163,33,95,0.15);
-}
-
-/* ── KPI Cards grid ── */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 8px;
-}
-.kpi-card {
-  background: var(--white);
-  border-radius: 14px;
-  padding: 20px 22px;
-  box-shadow: var(--card-shadow);
-  transition: box-shadow .2s, transform .2s;
-  position: relative;
-  overflow: hidden;
-  cursor: default;
-}
-.kpi-card:hover {
-  box-shadow: var(--card-shadow-hover);
-  transform: translateY(-2px);
-}
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--bordeaux);
-  opacity: 0;
-  transition: opacity .2s;
-}
-.kpi-card:hover::before { opacity: 1; }
-.kpi-card.accent::before { opacity: 1; background: linear-gradient(90deg, var(--bordeaux), var(--navy)); }
-.kpi-label {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--gray-light);
-  margin-bottom: 10px;
-}
-.kpi-value {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--navy);
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.kpi-value.bordeaux { color: var(--bordeaux); }
-.kpi-unit {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--gray-light);
-}
-.kpi-sub {
-  font-size: 11px;
-  color: var(--gray-light);
-  margin-top: 6px;
-}
-.kpi-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 99px;
-  margin-top: 6px;
-}
-.badge-good { background: #dcfce7; color: #166534; }
-.badge-warn { background: #fef9c3; color: #854d0e; }
-.badge-bad  { background: #fee2e2; color: #991b1b; }
-
-/* ── Charts row ── */
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-.chart-card {
-  background: var(--white);
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: var(--card-shadow);
-}
-.chart-card.wide {
-  grid-column: 1 / -1;
-}
-.chart-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--navy);
-  margin-bottom: 4px;
-}
-.chart-subtitle {
-  font-size: 11px;
-  color: var(--gray-light);
-  margin-bottom: 20px;
-}
-.chart-wrap { position: relative; height: 220px; }
-
-/* ── Taux d'ouverture ── */
-.taux-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-.taux-card {
-  background: var(--white);
-  border-radius: 12px;
-  padding: 16px 18px;
-  box-shadow: var(--card-shadow);
-}
-.taux-label { font-size: 11px; color: var(--gray-light); margin-bottom: 8px; font-weight: 500; }
-.taux-name { font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.taux-bar-wrap { height: 6px; background: #eee; border-radius: 99px; margin-bottom: 6px; }
-.taux-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--bordeaux), var(--bordeaux-light)); transition: width .6s cubic-bezier(.4,0,.2,1); }
-.taux-pct { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--navy); }
-
-/* ── Modal ── */
-.modal-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(27,42,74,0.5);
-  backdrop-filter: blur(4px);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--white);
-  border-radius: 18px;
-  padding: 36px 40px;
-  width: 580px;
-  max-width: 95vw;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 80px rgba(27,42,74,0.25);
-}
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 28px;
-}
-.modal-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 20px;
-  color: var(--navy);
-}
-.modal-close {
-  background: none; border: none; cursor: pointer;
-  color: var(--gray-light); font-size: 22px; line-height: 1;
-  padding: 0; margin-top: -2px;
-}
-.modal-close:hover { color: var(--navy); }
-.modal-section {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--bordeaux);
-  margin: 20px 0 12px;
-}
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.field { display: flex; flex-direction: column; gap: 5px; }
-.field label { font-size: 12px; font-weight: 500; color: var(--gray); }
-.field input, .field select {
-  padding: 9px 12px;
-  border: 1.5px solid #e5e5ea;
-  border-radius: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: var(--navy);
-  background: white;
-  transition: border-color .2s;
-}
-.field input:focus, .field select:focus {
-  outline: none;
-  border-color: var(--bordeaux);
-}
-.field.full { grid-column: 1 / -1; }
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f0f0;
-}
-.btn-save {
-  background: var(--bordeaux);
-  color: white;
-  border: none;
-  border-radius: 9px;
-  padding: 10px 28px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .2s;
-}
-.btn-save:hover { background: var(--bordeaux-dark); }
-.btn-cancel-modal {
-  background: var(--bg);
-  color: var(--gray);
-  border: none;
-  border-radius: 9px;
-  padding: 10px 20px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-/* ── Études table ── */
-.etudes-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.etudes-table th {
-  text-align: left;
-  padding: 8px 12px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--gray-light);
-  font-weight: 600;
-  border-bottom: 1px solid #eee;
-}
-.etudes-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f5f5f5;
-  color: var(--navy);
-}
-.etudes-table tr:last-child td { border-bottom: none; }
-.etudes-table input[type=text], .etudes-table input[type=number] {
-  border: 1.5px solid #e5e5ea;
-  border-radius: 6px;
-  padding: 5px 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  width: 100%;
-  color: var(--navy);
-}
-.etudes-table input:focus { outline: none; border-color: var(--bordeaux); }
-.add-etude-btn {
-  background: none;
-  border: 1.5px dashed rgba(163,33,95,0.3);
-  border-radius: 8px;
-  width: 100%;
-  padding: 9px;
-  color: var(--bordeaux);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: all .2s;
-}
-.add-etude-btn:hover { background: rgba(163,33,95,0.04); border-color: var(--bordeaux); }
-
-/* ── Responsive ── */
-@media(max-width: 768px) {
-  .main { padding: 20px 16px; }
-  .header { padding: 0 16px; }
-  .period-bar { padding: 0 16px; }
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .charts-grid { grid-template-columns: 1fr; }
-  .taux-grid { grid-template-columns: 1fr 1fr; }
-  .field-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Fade in ── */
-@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
-.kpi-card, .chart-card, .taux-card {
-  animation: fadeUp .4s ease both;
-}
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(27,42,74,0.5);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:18px;padding:36px 40px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(27,42,74,0.25);}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--navy);}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--gray-light);font-size:22px;line-height:1;padding:0;margin-top:-2px;}
+.modal-close:hover{color:var(--navy);}
+.modal-section{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--bordeaux);margin:20px 0 12px;}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:12px;font-weight:500;color:var(--gray);}
+.field input,.field select{padding:9px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--navy);background:white;transition:border-color .2s;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--bordeaux);}
+.field.full{grid-column:1/-1;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:28px;padding-top:20px;border-top:1px solid #f0f0f0;}
+.btn-save{background:var(--bordeaux);color:white;border:none;border-radius:9px;padding:10px 28px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;}
+.btn-save:hover{background:var(--bordeaux-dark);}
+.btn-cancel-modal{background:var(--bg);color:var(--gray);border:none;border-radius:9px;padding:10px 20px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;}
+.etudes-table{width:100%;border-collapse:collapse;font-size:13px;}
+.etudes-table th{text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--gray-light);font-weight:600;border-bottom:1px solid #eee;}
+.etudes-table td{padding:10px 12px;border-bottom:1px solid #f5f5f5;color:var(--navy);}
+.etudes-table input[type=text],.etudes-table input[type=number]{border:1.5px solid #e5e5ea;border-radius:6px;padding:5px 8px;font-family:'DM Sans',sans-serif;font-size:12px;width:100%;color:var(--navy);}
+.etudes-table input:focus{outline:none;border-color:var(--bordeaux);}
+.add-etude-btn{background:none;border:1.5px dashed rgba(163,33,95,0.3);border-radius:8px;width:100%;padding:9px;color:var(--bordeaux);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-top:10px;transition:all .2s;}
+.add-etude-btn:hover{background:rgba(163,33,95,0.04);border-color:var(--bordeaux);}
+@media(max-width:768px){.main{padding:20px 16px;}.header{padding:0 16px;}.period-bar{padding:0 16px;}.kpi-grid{grid-template-columns:1fr 1fr;}.charts-grid{grid-template-columns:1fr;}.taux-grid{grid-template-columns:1fr 1fr;}.field-grid{grid-template-columns:1fr;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+.kpi-card,.chart-card,.taux-card{animation:fadeUp .4s ease both;}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header class="header">
-  <div class="header-left">
-    <div class="logo-mark">
+<!-- LOGIN -->
+<div class="login-page" id="login-page">
+  <div class="login-box">
+    <div class="login-logo">
       <svg viewBox="0 0 40 40" fill="none">
         <polygon points="20,2 38,32 2,32" fill="none" stroke="#A3215F" stroke-width="3"/>
-        <polygon points="20,10 30,28 10,28" fill="#A3215F" opacity=".5"/>
-        <polygon points="20,10 30,28 10,28" fill="none" stroke="#1B2A4A" stroke-width="2"/>
+        <polygon points="20,10 30,28 10,28" fill="#A3215F" opacity=".6"/>
+        <polygon points="20,10 30,28 10,28" fill="none" stroke="#1B2A4A" stroke-width="1.5"/>
       </svg>
+      <div>
+        <div class="login-logo-name">ICN Junior Conseil</div>
+        <div class="login-logo-sub">Dashboard Trésorerie</div>
+      </div>
     </div>
-    <div>
-      <div class="header-title">ICN Junior Conseil</div>
-      <div class="header-subtitle">Dashboard Trésorerie</div>
+    <div class="login-title">Accès sécurisé</div>
+    <div class="login-sub">Connecte-toi avec ton compte Google ICN Junior Conseil pour accéder au dashboard.</div>
+    <button class="google-btn" onclick="doGoogleLogin()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+      Se connecter avec Google
+    </button>
+    <div class="denied-box" id="denied-box">
+      <strong>Accès refusé</strong>
+      <p id="denied-msg">Ce compte n'est pas autorisé.</p>
     </div>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-footer">Accès réservé aux membres du pôle trésorerie</div>
   </div>
-  <div class="header-right">
-    <div class="sync-pill">
-      <div class="sync-dot" id="sync-dot"></div>
-      <span id="sync-label">Connexion…</span>
-    </div>
-  </div>
-</header>
-
-<!-- PERIOD BAR -->
-<div class="period-bar">
-  <div class="period-tabs">
-    <button class="period-tab active" onclick="setPeriod('mandat',this)">Mandat en cours</button>
-    <button class="period-tab" onclick="setPeriod('civil',this)">Année civile</button>
-  </div>
-  <button class="edit-btn" onclick="openModal()">
-    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.5 2.5a2.121 2.121 0 013 3L5 15H2v-3L11.5 2.5z"/></svg>
-    Mettre à jour les données
-  </button>
 </div>
 
-<!-- MAIN -->
-<main class="main">
-
-  <!-- KPI principaux -->
-  <div class="section-title">Activité commerciale</div>
-  <div class="kpi-grid" id="kpi-commercial"></div>
-
-  <div class="section-title">Finances</div>
-  <div class="kpi-grid" id="kpi-finances"></div>
-
-  <div class="section-title">Performance</div>
-  <div class="kpi-grid" id="kpi-perf"></div>
-
-  <!-- Taux d'ouverture par étude -->
-  <div class="section-title">Taux d'ouverture — études signées</div>
-  <div class="taux-grid" id="taux-grid"></div>
-
-  <!-- Graphiques -->
-  <div class="section-title">Visualisations</div>
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-title">CA Signé vs CA Encaissé</div>
-      <div class="chart-subtitle">Comparaison mandat / année civile</div>
-      <div class="chart-wrap"><canvas id="chart-ca"></canvas></div>
+<!-- APP -->
+<div class="app-page" id="app-page">
+  <header class="header">
+    <div class="header-left">
+      <div class="logo-mark">
+        <svg viewBox="0 0 40 40" fill="none">
+          <polygon points="20,2 38,32 2,32" fill="none" stroke="#A3215F" stroke-width="3"/>
+          <polygon points="20,10 30,28 10,28" fill="#A3215F" opacity=".5"/>
+          <polygon points="20,10 30,28 10,28" fill="none" stroke="#1B2A4A" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="header-title">ICN Junior Conseil</div>
+        <div class="header-subtitle">Dashboard Trésorerie</div>
+      </div>
     </div>
-    <div class="chart-card">
-      <div class="chart-title">Répartition financière</div>
-      <div class="chart-subtitle">Structure des flux</div>
-      <div class="chart-wrap"><canvas id="chart-repartition"></canvas></div>
+    <div class="header-right">
+      <div class="sync-pill">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-label">Connexion…</span>
+      </div>
+      <div class="user-pill-header">
+        <img class="user-avatar-sm" id="user-avatar" src="" alt=""/>
+        <span class="user-name-header" id="user-name">—</span>
+      </div>
+      <button class="logout-btn-header" onclick="doLogout()">Déconnexion</button>
     </div>
-    <div class="chart-card wide">
-      <div class="chart-title">Évolution mensuelle du CA encaissé</div>
-      <div class="chart-subtitle">Tendance sur les derniers mois</div>
-      <div class="chart-wrap" style="height:200px"><canvas id="chart-evolution"></canvas></div>
+  </header>
+
+  <div class="period-bar">
+    <div class="period-tabs">
+      <button class="period-tab active" onclick="setPeriod('mandat',this)">Mandat en cours</button>
+      <button class="period-tab" onclick="setPeriod('civil',this)">Année civile</button>
     </div>
+    <button class="edit-btn" onclick="openModal()">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11.5 2.5a2.121 2.121 0 013 3L5 15H2v-3L11.5 2.5z"/></svg>
+      Mettre à jour les données
+    </button>
   </div>
 
-</main>
+  <main class="main">
+    <div class="section-title">Activité commerciale</div>
+    <div class="kpi-grid" id="kpi-commercial"></div>
+    <div class="section-title">Finances</div>
+    <div class="kpi-grid" id="kpi-finances"></div>
+    <div class="section-title">Performance</div>
+    <div class="kpi-grid" id="kpi-perf"></div>
+    <div class="section-title">Taux d'ouverture — études signées</div>
+    <div class="taux-grid" id="taux-grid"></div>
+    <div class="section-title">Visualisations</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">CA Signé vs CA Encaissé</div>
+        <div class="chart-subtitle">Comparaison des flux</div>
+        <div class="chart-wrap"><canvas id="chart-ca"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Répartition financière</div>
+        <div class="chart-subtitle">Structure des flux</div>
+        <div class="chart-wrap"><canvas id="chart-repartition"></canvas></div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-title">Évolution mensuelle du CA encaissé</div>
+        <div class="chart-subtitle">Tendance sur les derniers mois</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-evolution"></canvas></div>
+      </div>
+    </div>
+  </main>
+</div>
 
 <!-- MODAL SAISIE -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -533,7 +229,6 @@ body {
       <div class="modal-title">Mettre à jour les données</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
-
     <div class="modal-section">Activité commerciale</div>
     <div class="field-grid">
       <div class="field"><label>CA Signé (€)</label><input type="number" id="f-ca-signe" placeholder="0"></div>
@@ -542,7 +237,6 @@ body {
       <div class="field"><label>Nb d'études signées</label><input type="number" id="f-nb-etudes" placeholder="0"></div>
       <div class="field"><label>Nb d'intervenants</label><input type="number" id="f-nb-intervenants" placeholder="0"></div>
     </div>
-
     <div class="modal-section">Finances</div>
     <div class="field-grid">
       <div class="field"><label>Cash disponible (€)</label><input type="number" id="f-cash" placeholder="0"></div>
@@ -550,7 +244,6 @@ body {
       <div class="field"><label>Montant impayés (€)</label><input type="number" id="f-impayes" placeholder="0"></div>
       <div class="field"><label>Coût total des études (€)</label><input type="number" id="f-cout-total" placeholder="0"></div>
     </div>
-
     <div class="modal-section">Évolution mensuelle CA encaissé</div>
     <div class="field-grid">
       <div class="field"><label>Janv (€)</label><input type="number" id="m-0" placeholder="0"></div>
@@ -566,14 +259,12 @@ body {
       <div class="field"><label>Nov (€)</label><input type="number" id="m-10" placeholder="0"></div>
       <div class="field"><label>Déc (€)</label><input type="number" id="m-11" placeholder="0"></div>
     </div>
-
-    <div class="modal-section">Taux d'ouverture — 4 études signées</div>
+    <div class="modal-section">Taux d'ouverture — études signées</div>
     <table class="etudes-table">
       <thead><tr><th>Nom de l'étude</th><th>Taux d'ouverture (%)</th></tr></thead>
       <tbody id="etudes-tbody"></tbody>
     </table>
     <button class="add-etude-btn" onclick="addEtudeRow()">+ Ajouter une étude</button>
-
     <div class="modal-actions">
       <button class="btn-cancel-modal" onclick="closeModal()">Annuler</button>
       <button class="btn-save" onclick="saveData()">Enregistrer</button>
@@ -582,308 +273,172 @@ body {
 </div>
 
 <script>
-// ── Firebase ─────────────────────────────────────────────────
-var firebaseConfig = {
-  apiKey: "AIzaSyATR3uxThMrAO7302kdxHwODul1XpIDKL8",
-  authDomain: "audit-tresorerie.firebaseapp.com",
-  projectId: "audit-tresorerie",
-  storageBucket: "audit-tresorerie.firebasestorage.app",
-  messagingSenderId: "566000504770",
-  appId: "1:566000504770:web:41034f2b9f77583861505b"
-};
+// ── Firebase ──────────────────────────────────────────────────
+var firebaseConfig={apiKey:"AIzaSyATR3uxThMrAO7302kdxHwODul1XpIDKL8",authDomain:"audit-tresorerie.firebaseapp.com",projectId:"audit-tresorerie",storageBucket:"audit-tresorerie.firebasestorage.app",messagingSenderId:"566000504770",appId:"1:566000504770:web:41034f2b9f77583861505b"};
 firebase.initializeApp(firebaseConfig);
-var db = firebase.firestore();
-var docRef = db.collection('kpi').doc('dashboard');
+var auth=firebase.auth();
+var db=firebase.firestore();
+var docRef=db.collection('kpi').doc('dashboard');
+var provider=new firebase.auth.GoogleAuthProvider();
 
-// ── Default data ──────────────────────────────────────────────
-var DEFAULT = {
-  'ca-signe': 0, 'ca-encaisse': 0, 'cotisations': 0,
-  'nb-etudes': 0, 'nb-intervenants': 0,
-  'cash': 0, 'marge': 0, 'impayes': 0, 'cout-total': 0,
-  'mensuel': [0,0,0,0,0,0,0,0,0,0,0,0],
-  'etudes': [
-    {nom:'Étude 1', taux: 0},
-    {nom:'Étude 2', taux: 0},
-    {nom:'Étude 3', taux: 0},
-    {nom:'Étude 4', taux: 0},
-  ]
-};
-var data = JSON.parse(JSON.stringify(DEFAULT));
-var currentPeriod = 'mandat';
+var ALLOWED_DOMAINS=['icnjuniorconseil.com'];
+var ALLOWED_EMAILS=[];
+var unsubKpi=null;
 
-// ── Sync status ───────────────────────────────────────────────
-function setSyncStatus(state, msg) {
-  document.getElementById('sync-dot').className = 'sync-dot ' + state;
-  document.getElementById('sync-label').innerText = msg;
-}
-
-// ── Firebase listener ─────────────────────────────────────────
-docRef.onSnapshot(function(doc) {
-  if (doc.exists) {
-    data = Object.assign(JSON.parse(JSON.stringify(DEFAULT)), doc.data());
+// ── Auth ──────────────────────────────────────────────────────
+auth.onAuthStateChanged(function(user){
+  if(user){
+    var email=user.email||'';
+    var domain=email.split('@')[1]||'';
+    if(ALLOWED_DOMAINS.indexOf(domain)===-1&&ALLOWED_EMAILS.indexOf(email)===-1){
+      auth.signOut();
+      document.getElementById('denied-box').style.display='block';
+      document.getElementById('denied-msg').innerText='Le compte '+email+" n'est pas autorisé.";
+      return;
+    }
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('app-page').style.display='block';
+    document.getElementById('user-name').innerText=user.displayName||email;
+    if(user.photoURL){var av=document.getElementById('user-avatar');av.src=user.photoURL;av.style.display='block';}
+    startKpi();
+  }else{
+    document.getElementById('login-page').style.display='flex';
+    document.getElementById('app-page').style.display='none';
+    if(unsubKpi){unsubKpi();unsubKpi=null;}
   }
-  setSyncStatus('ok', 'Synchronisé');
-  renderAll();
-}, function(err) {
-  setSyncStatus('error', 'Erreur: ' + err.message);
 });
 
+function doGoogleLogin(){
+  document.getElementById('denied-box').style.display='none';
+  document.getElementById('login-error').style.display='none';
+  auth.signInWithPopup(provider).catch(function(e){
+    if(e.code!=='auth/popup-closed-by-user'){
+      document.getElementById('login-error').innerText='Erreur : '+e.message;
+      document.getElementById('login-error').style.display='block';
+    }
+  });
+}
+function doLogout(){auth.signOut();}
+
+// ── KPI data ──────────────────────────────────────────────────
+var DEFAULT={'ca-signe':0,'ca-encaisse':0,'cotisations':0,'nb-etudes':0,'nb-intervenants':0,'cash':0,'marge':0,'impayes':0,'cout-total':0,'mensuel':[0,0,0,0,0,0,0,0,0,0,0,0],'etudes':[{nom:'Étude 1',taux:0},{nom:'Étude 2',taux:0},{nom:'Étude 3',taux:0},{nom:'Étude 4',taux:0}]};
+var data=JSON.parse(JSON.stringify(DEFAULT));
+
+function setSyncStatus(s,m){document.getElementById('sync-dot').className='sync-dot '+s;document.getElementById('sync-label').innerText=m;}
+
+function startKpi(){
+  setSyncStatus('syncing','Chargement…');
+  unsubKpi=docRef.onSnapshot(function(doc){
+    if(doc.exists)data=Object.assign(JSON.parse(JSON.stringify(DEFAULT)),doc.data());
+    setSyncStatus('ok','Synchronisé');
+    renderAll();
+  },function(err){setSyncStatus('error','Erreur: '+err.message);});
+}
+
 // ── Helpers ───────────────────────────────────────────────────
-function fmt(n) {
-  if (n === undefined || n === null) return '0';
-  return Number(n).toLocaleString('fr-FR');
-}
-function pct(a, b) {
-  if (!b) return 0;
-  return Math.round(a / b * 100);
-}
-function badgeClass(val, good, warn) {
-  if (val >= good) return 'badge-good';
-  if (val >= warn) return 'badge-warn';
-  return 'badge-bad';
-}
+function fmt(n){return Number(n||0).toLocaleString('fr-FR');}
+function pct(a,b){return b?Math.round(a/b*100):0;}
+function badgeClass(v,g,w){return v>=g?'badge-good':v>=w?'badge-warn':'badge-bad';}
 
-// ── Render KPI cards ──────────────────────────────────────────
-function renderAll() {
-  var d = data;
-  var txTransfo = pct(d['ca-encaisse'], d['ca-signe']);
-  var txImpayes = pct(d['impayes'], d['ca-signe']);
-  var panierMoyen = d['nb-etudes'] ? Math.round(d['ca-signe'] / d['nb-etudes']) : 0;
-  var coutMoyen = d['nb-etudes'] ? Math.round(d['cout-total'] / d['nb-etudes']) : 0;
+// ── Render ────────────────────────────────────────────────────
+function renderAll(){
+  var d=data;
+  var txT=pct(d['ca-encaisse'],d['ca-signe']);
+  var txI=pct(d['impayes'],d['ca-signe']);
+  var pm=d['nb-etudes']?Math.round(d['ca-signe']/d['nb-etudes']):0;
+  var cm=d['nb-etudes']?Math.round(d['cout-total']/d['nb-etudes']):0;
 
-  // Commercial
-  document.getElementById('kpi-commercial').innerHTML =
-    kpiCard('CA Signé', fmt(d['ca-signe']), '€', '', 'accent') +
-    kpiCard('CA Encaissé', fmt(d['ca-encaisse']), '€', '') +
-    kpiCard('Cotisations & divers', fmt(d['cotisations']), '€', '') +
-    kpiCard("Nb d'études", d['nb-etudes'], '', '') +
-    kpiCard("Nb d'intervenants", d['nb-intervenants'], '', '');
+  document.getElementById('kpi-commercial').innerHTML=
+    kpiCard('CA Signé',fmt(d['ca-signe']),'€','','accent')+
+    kpiCard('CA Encaissé',fmt(d['ca-encaisse']),'€','')+
+    kpiCard('Cotisations & divers',fmt(d['cotisations']),'€','')+
+    kpiCard("Nb d'études",d['nb-etudes'],'')+
+    kpiCard("Nb d'intervenants",d['nb-intervenants'],'','');
 
-  // Finances
-  document.getElementById('kpi-finances').innerHTML =
-    kpiCard('Cash disponible', fmt(d['cash']), '€', '', 'accent') +
-    kpiCard('Marge nette', fmt(d['marge']), '€', '') +
-    kpiCard('Panier moyen', fmt(panierMoyen), '€', 'par étude') +
-    kpiCard('Coût moyen / étude', fmt(coutMoyen), '€', '');
+  document.getElementById('kpi-finances').innerHTML=
+    kpiCard('Cash disponible',fmt(d['cash']),'€','','accent')+
+    kpiCard('Marge nette',fmt(d['marge']),'€','')+
+    kpiCard('Panier moyen',fmt(pm),'€','par étude')+
+    kpiCard('Coût moyen / étude',fmt(cm),'€','');
 
-  // Performance
-  var b1 = '<span class="kpi-badge ' + badgeClass(txTransfo, 80, 50) + '">' + txTransfo + '%</span>';
-  var b2 = '<span class="kpi-badge ' + (txImpayes <= 5 ? 'badge-good' : txImpayes <= 15 ? 'badge-warn' : 'badge-bad') + '">' + txImpayes + '%</span>';
-  document.getElementById('kpi-perf').innerHTML =
-    kpiCardRaw('Taux de transformation', b1, 'CA signé → encaissé') +
-    kpiCardRaw("Taux d'impayés", b2, 'sur CA signé');
+  document.getElementById('kpi-perf').innerHTML=
+    kpiCardRaw('Taux de transformation','<span class="kpi-badge '+badgeClass(txT,80,50)+'">'+txT+' %</span>','CA signé → encaissé')+
+    kpiCardRaw("Taux d'impayés",'<span class="kpi-badge '+(txI<=5?'badge-good':txI<=15?'badge-warn':'badge-bad')+'">'+txI+' %</span>','sur CA signé');
 
-  // Taux d'ouverture
   renderTaux();
-
-  // Charts
   renderCharts();
 }
 
-function kpiCard(label, value, unit, sub, cls) {
-  return '<div class="kpi-card ' + (cls||'') + '">' +
-    '<div class="kpi-label">' + label + '</div>' +
-    '<div class="kpi-value">' + value + ' <span class="kpi-unit">' + unit + '</span></div>' +
-    (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') +
-    '</div>';
+function kpiCard(label,value,unit,sub,cls){
+  return'<div class="kpi-card '+(cls||'')+'"><div class="kpi-label">'+label+'</div><div class="kpi-value">'+value+' <span class="kpi-unit">'+unit+'</span></div>'+(sub?'<div class="kpi-sub">'+sub+'</div>':'')+'</div>';
 }
-function kpiCardRaw(label, html, sub) {
-  return '<div class="kpi-card">' +
-    '<div class="kpi-label">' + label + '</div>' +
-    '<div style="margin-top:10px">' + html + '</div>' +
-    (sub ? '<div class="kpi-sub" style="margin-top:6px">' + sub + '</div>' : '') +
-    '</div>';
+function kpiCardRaw(label,html,sub){
+  return'<div class="kpi-card"><div class="kpi-label">'+label+'</div><div style="margin-top:10px">'+html+'</div>'+(sub?'<div class="kpi-sub" style="margin-top:6px">'+sub+'</div>':'')+'</div>';
 }
 
-function renderTaux() {
-  var etudes = data.etudes || [];
-  var html = '';
-  for (var i = 0; i < 4; i++) {
-    var e = etudes[i] || {nom: 'Étude ' + (i+1), taux: 0};
-    var t = Math.min(100, Math.max(0, Number(e.taux) || 0));
-    html += '<div class="taux-card">' +
-      '<div class="taux-label">Étude ' + (i+1) + '</div>' +
-      '<div class="taux-name">' + (e.nom || 'Sans nom') + '</div>' +
-      '<div class="taux-bar-wrap"><div class="taux-bar" style="width:' + t + '%"></div></div>' +
-      '<div class="taux-pct">' + t + '<span class="kpi-unit"> %</span></div>' +
-      '</div>';
+function renderTaux(){
+  var etudes=data.etudes||[];
+  var html='';
+  for(var i=0;i<4;i++){
+    var e=etudes[i]||{nom:'Étude '+(i+1),taux:0};
+    var t=Math.min(100,Math.max(0,Number(e.taux)||0));
+    html+='<div class="taux-card"><div class="taux-label">Étude '+(i+1)+'</div><div class="taux-name">'+(e.nom||'Sans nom')+'</div><div class="taux-bar-wrap"><div class="taux-bar" style="width:'+t+'%"></div></div><div class="taux-pct">'+t+'<span class="kpi-unit"> %</span></div></div>';
   }
-  document.getElementById('taux-grid').innerHTML = html;
+  document.getElementById('taux-grid').innerHTML=html;
 }
 
-// ── Charts ────────────────────────────────────────────────────
-var chartCA, chartRep, chartEvol;
-var BORDEAUX = '#A3215F';
-var NAVY = '#1B2A4A';
-var BORDEAUX_LIGHT = 'rgba(163,33,95,0.15)';
-
-function renderCharts() {
-  var d = data;
-  var mois = ['Jan','Fév','Mar','Avr','Mai','Jun','Juil','Aoû','Sep','Oct','Nov','Déc'];
-
-  // CA signé vs encaissé
-  var ctx1 = document.getElementById('chart-ca').getContext('2d');
-  if (chartCA) chartCA.destroy();
-  chartCA = new Chart(ctx1, {
-    type: 'bar',
-    data: {
-      labels: ['CA Signé', 'CA Encaissé', 'Cotisations'],
-      datasets: [{
-        data: [d['ca-signe'], d['ca-encaisse'], d['cotisations']],
-        backgroundColor: [NAVY, BORDEAUX, 'rgba(163,33,95,0.4)'],
-        borderRadius: 8,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { family: 'DM Sans', size: 11 } } },
-        x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 } } }
-      }
-    }
-  });
-
-  // Répartition
-  var ctx2 = document.getElementById('chart-repartition').getContext('2d');
-  if (chartRep) chartRep.destroy();
-  var totalRep = (d['ca-encaisse'] || 0) + (d['cotisations'] || 0) + (d['impayes'] || 0);
-  chartRep = new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: ['CA Encaissé', 'Cotisations', 'Impayés'],
-      datasets: [{
-        data: [d['ca-encaisse'] || 0, d['cotisations'] || 0, d['impayes'] || 0],
-        backgroundColor: [NAVY, BORDEAUX, '#e5c0d0'],
-        borderWidth: 0,
-        hoverOffset: 6
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { font: { family: 'DM Sans', size: 11 }, padding: 16, usePointStyle: true }
-        }
-      }
-    }
-  });
-
-  // Évolution mensuelle
-  var ctx3 = document.getElementById('chart-evolution').getContext('2d');
-  if (chartEvol) chartEvol.destroy();
-  var mensuel = d['mensuel'] || Array(12).fill(0);
-  chartEvol = new Chart(ctx3, {
-    type: 'line',
-    data: {
-      labels: mois,
-      datasets: [{
-        data: mensuel,
-        borderColor: BORDEAUX,
-        backgroundColor: BORDEAUX_LIGHT,
-        borderWidth: 2.5,
-        pointBackgroundColor: BORDEAUX,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { family: 'DM Sans', size: 11 } } },
-        x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 } } }
-      }
-    }
-  });
+var chartCA,chartRep,chartEvol;
+function renderCharts(){
+  var d=data;
+  var BORDEAUX='#A3215F',NAVY='#1B2A4A',BL='rgba(163,33,95,0.15)';
+  var mois=['Jan','Fév','Mar','Avr','Mai','Jun','Juil','Aoû','Sep','Oct','Nov','Déc'];
+  var ctx1=document.getElementById('chart-ca').getContext('2d');
+  if(chartCA)chartCA.destroy();
+  chartCA=new Chart(ctx1,{type:'bar',data:{labels:['CA Signé','CA Encaissé','Cotisations'],datasets:[{data:[d['ca-signe'],d['ca-encaisse'],d['cotisations']],backgroundColor:[NAVY,BORDEAUX,'rgba(163,33,95,0.4)'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{family:'DM Sans',size:11}}},x:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11}}}}}});
+  var ctx2=document.getElementById('chart-repartition').getContext('2d');
+  if(chartRep)chartRep.destroy();
+  chartRep=new Chart(ctx2,{type:'doughnut',data:{labels:['CA Encaissé','Cotisations','Impayés'],datasets:[{data:[d['ca-encaisse']||0,d['cotisations']||0,d['impayes']||0],backgroundColor:[NAVY,BORDEAUX,'#e5c0d0'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans',size:11},padding:16,usePointStyle:true}}}}});
+  var ctx3=document.getElementById('chart-evolution').getContext('2d');
+  if(chartEvol)chartEvol.destroy();
+  chartEvol=new Chart(ctx3,{type:'line',data:{labels:mois,datasets:[{data:d['mensuel']||Array(12).fill(0),borderColor:BORDEAUX,backgroundColor:BL,borderWidth:2.5,pointBackgroundColor:BORDEAUX,pointRadius:4,pointHoverRadius:6,fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{family:'DM Sans',size:11}}},x:{grid:{display:false},ticks:{font:{family:'DM Sans',size:11}}}}}});
 }
 
-// ── Period switch ─────────────────────────────────────────────
-function setPeriod(p, el) {
-  currentPeriod = p;
-  document.querySelectorAll('.period-tab').forEach(function(t) { t.classList.remove('active'); });
-  el.classList.add('active');
-  // Pour l'instant même données, à différencier si tu veux des champs séparés par période
-}
+function setPeriod(p,el){document.querySelectorAll('.period-tab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');}
 
 // ── Modal ─────────────────────────────────────────────────────
-function openModal() {
-  var d = data;
-  document.getElementById('f-ca-signe').value = d['ca-signe'] || '';
-  document.getElementById('f-ca-encaisse').value = d['ca-encaisse'] || '';
-  document.getElementById('f-cotisations').value = d['cotisations'] || '';
-  document.getElementById('f-nb-etudes').value = d['nb-etudes'] || '';
-  document.getElementById('f-nb-intervenants').value = d['nb-intervenants'] || '';
-  document.getElementById('f-cash').value = d['cash'] || '';
-  document.getElementById('f-marge').value = d['marge'] || '';
-  document.getElementById('f-impayes').value = d['impayes'] || '';
-  document.getElementById('f-cout-total').value = d['cout-total'] || '';
-
-  var mensuel = d['mensuel'] || Array(12).fill(0);
-  for (var i = 0; i < 12; i++) {
-    document.getElementById('m-' + i).value = mensuel[i] || '';
-  }
-
-  // Études
-  var tbody = document.getElementById('etudes-tbody');
-  tbody.innerHTML = '';
-  var etudes = d['etudes'] || [{nom:'',taux:0},{nom:'',taux:0},{nom:'',taux:0},{nom:'',taux:0}];
-  etudes.forEach(function(e, i) {
-    addEtudeRowData(e.nom, e.taux);
-  });
-
+function openModal(){
+  var d=data;
+  document.getElementById('f-ca-signe').value=d['ca-signe']||'';
+  document.getElementById('f-ca-encaisse').value=d['ca-encaisse']||'';
+  document.getElementById('f-cotisations').value=d['cotisations']||'';
+  document.getElementById('f-nb-etudes').value=d['nb-etudes']||'';
+  document.getElementById('f-nb-intervenants').value=d['nb-intervenants']||'';
+  document.getElementById('f-cash').value=d['cash']||'';
+  document.getElementById('f-marge').value=d['marge']||'';
+  document.getElementById('f-impayes').value=d['impayes']||'';
+  document.getElementById('f-cout-total').value=d['cout-total']||'';
+  var mensuel=d['mensuel']||Array(12).fill(0);
+  for(var i=0;i<12;i++)document.getElementById('m-'+i).value=mensuel[i]||'';
+  var tbody=document.getElementById('etudes-tbody');tbody.innerHTML='';
+  var etudes=d['etudes']||[{nom:'',taux:0},{nom:'',taux:0},{nom:'',taux:0},{nom:'',taux:0}];
+  etudes.forEach(function(e){addEtudeRowData(e.nom,e.taux);});
   document.getElementById('modal-overlay').classList.add('open');
 }
-
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
-}
-
-function addEtudeRow() { addEtudeRowData('', 0); }
-function addEtudeRowData(nom, taux) {
-  var tr = document.createElement('tr');
-  tr.innerHTML = '<td><input type="text" class="etude-nom" placeholder="Nom de l\'étude" value="' + (nom||'') + '"></td>' +
-    '<td><input type="number" class="etude-taux" placeholder="0" min="0" max="100" value="' + (taux||'') + '"></td>';
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function addEtudeRow(){addEtudeRowData('',0);}
+function addEtudeRowData(nom,taux){
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td><input type="text" class="etude-nom" placeholder="Nom de l\'étude" value="'+(nom||'')+'"></td><td><input type="number" class="etude-taux" placeholder="0" min="0" max="100" value="'+(taux||'')+'"></td>';
   document.getElementById('etudes-tbody').appendChild(tr);
 }
-
-function saveData() {
-  setSyncStatus('syncing', 'Enregistrement…');
-  var mensuel = [];
-  for (var i = 0; i < 12; i++) {
-    mensuel.push(Number(document.getElementById('m-' + i).value) || 0);
-  }
-  var noms = document.querySelectorAll('.etude-nom');
-  var taux = document.querySelectorAll('.etude-taux');
-  var etudes = [];
-  for (var j = 0; j < noms.length; j++) {
-    etudes.push({ nom: noms[j].value, taux: Number(taux[j].value) || 0 });
-  }
-
-  var newData = {
-    'ca-signe': Number(document.getElementById('f-ca-signe').value) || 0,
-    'ca-encaisse': Number(document.getElementById('f-ca-encaisse').value) || 0,
-    'cotisations': Number(document.getElementById('f-cotisations').value) || 0,
-    'nb-etudes': Number(document.getElementById('f-nb-etudes').value) || 0,
-    'nb-intervenants': Number(document.getElementById('f-nb-intervenants').value) || 0,
-    'cash': Number(document.getElementById('f-cash').value) || 0,
-    'marge': Number(document.getElementById('f-marge').value) || 0,
-    'impayes': Number(document.getElementById('f-impayes').value) || 0,
-    'cout-total': Number(document.getElementById('f-cout-total').value) || 0,
-    'mensuel': mensuel,
-    'etudes': etudes
-  };
-
-  docRef.set(newData).then(function() {
-    closeModal();
-  }).catch(function(e) {
-    setSyncStatus('error', e.message);
-  });
+function saveData(){
+  setSyncStatus('syncing','Enregistrement…');
+  var mensuel=[];for(var i=0;i<12;i++)mensuel.push(Number(document.getElementById('m-'+i).value)||0);
+  var noms=document.querySelectorAll('.etude-nom');
+  var taux=document.querySelectorAll('.etude-taux');
+  var etudes=[];for(var j=0;j<noms.length;j++)etudes.push({nom:noms[j].value,taux:Number(taux[j].value)||0});
+  var newData={'ca-signe':Number(document.getElementById('f-ca-signe').value)||0,'ca-encaisse':Number(document.getElementById('f-ca-encaisse').value)||0,'cotisations':Number(document.getElementById('f-cotisations').value)||0,'nb-etudes':Number(document.getElementById('f-nb-etudes').value)||0,'nb-intervenants':Number(document.getElementById('f-nb-intervenants').value)||0,'cash':Number(document.getElementById('f-cash').value)||0,'marge':Number(document.getElementById('f-marge').value)||0,'impayes':Number(document.getElementById('f-impayes').value)||0,'cout-total':Number(document.getElementById('f-cout-total').value)||0,'mensuel':mensuel,'etudes':etudes};
+  docRef.set(newData).then(function(){closeModal();}).catch(function(e){setSyncStatus('error',e.message);});
 }
 </script>
 </body>
