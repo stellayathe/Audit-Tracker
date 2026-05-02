@@ -390,8 +390,7 @@ function exportCSV(){
   var rows=tasks.map(function(t){
     return['"'+t.section+'"','"'+(t.name||'').replace(/"/g,'""')+'"',t.resp,t.status,t.priority,(t.date||''),'"'+(t.note||'').replace(/"/g,'""')+'"'];
   });
-  var csv=bom+[header].concat(rows).map(function(r){return r.join(';');}).join('
-');
+  var csv=bom+[header].concat(rows).map(function(r){return r.join(';');}).join('\n');
   var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
